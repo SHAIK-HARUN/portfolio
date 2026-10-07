@@ -1,0 +1,22 @@
+{
+  "name": "Shaik Harun | Portfolio",
+  "short_name": "Shaik Harun",
+  "description": "Shaik Harun - Creative Frontend & Full Stack Developer Portfolio",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#05030f",
+  "theme_color": "#7c5cff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/images/shaik-harun-hero.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "assets/images/shaik-harun-hero.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
