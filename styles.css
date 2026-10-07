@@ -78,6 +78,31 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 0;
+    transform: translateZ(0);
+}
+
+/* GPU Hardware Acceleration & Smooth Frame Tuning */
+.tilt-card,
+.resume-project-card,
+.skill-category-card,
+.testimonial-card,
+.ambient-glow,
+.navbar,
+.about-photo-card,
+.ai-avatar-card,
+video {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+@media (max-width: 768px) {
+    .tilt-card,
+    .navbar,
+    .resume-project-card {
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+    }
 }
 
 a {

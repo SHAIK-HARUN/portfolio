@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: true });
 
         const particles = [];
-        const particleCount = Math.min(Math.floor(width * 0.04), 65);
+        const particleCount = Math.min(Math.floor(width * 0.035), 45);
 
         class Particle {
             constructor() {
@@ -30,10 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
             reset() {
                 this.x = Math.random() * width;
                 this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 0.4;
-                this.vy = (Math.random() - 0.5) * 0.4;
-                this.radius = Math.random() * 2 + 1;
-                this.alpha = Math.random() * 0.5 + 0.2;
+                this.vx = (Math.random() - 0.5) * 0.35;
+                this.vy = (Math.random() - 0.5) * 0.35;
+                this.radius = Math.random() * 1.8 + 1;
+                this.alpha = Math.random() * 0.45 + 0.2;
                 this.color = Math.random() > 0.3 ? '#7c5cff' : '#a78bfa';
             }
 
@@ -50,8 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
                 ctx.globalAlpha = this.alpha;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.color;
                 ctx.fill();
             }
         }
@@ -60,36 +58,45 @@ document.addEventListener('DOMContentLoaded', () => {
             particles.push(new Particle());
         }
 
+        const maxDistSq = 130 * 130; // 16900 (Avoid expensive Math.sqrt)
+
         function drawConnections() {
             for (let i = 0; i < particles.length; i++) {
+                const pi = particles[i];
                 for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const pj = particles[j];
+                    const dx = pi.x - pj.x;
+                    const dy = pi.y - pj.y;
+                    const distSq = dx * dx + dy * dy;
 
-                    if (dist < 130) {
+                    if (distSq < maxDistSq) {
                         ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.moveTo(pi.x, pi.y);
+                        ctx.lineTo(pj.x, pj.y);
                         ctx.strokeStyle = '#7c5cff';
-                        ctx.globalAlpha = (1 - dist / 130) * 0.18;
-                        ctx.lineWidth = 0.8;
+                        ctx.globalAlpha = (1 - Math.sqrt(distSq) / 130) * 0.16;
+                        ctx.lineWidth = 0.75;
                         ctx.stroke();
                     }
                 }
             }
         }
 
+        let animFrameId;
         function animateCanvas() {
+            if (document.hidden) {
+                animFrameId = requestAnimationFrame(animateCanvas);
+                return;
+            }
             ctx.clearRect(0, 0, width, height);
             
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
 
             drawConnections();
-            requestAnimationFrame(animateCanvas);
+            animFrameId = requestAnimationFrame(animateCanvas);
         }
 
         requestAnimationFrame(animateCanvas);
