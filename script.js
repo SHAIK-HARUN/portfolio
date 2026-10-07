@@ -464,12 +464,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ----------------------------------------------------------------------
-       12. BULLETPROOF NETLIFY & CROSS-BROWSER AI AUDIO GREETING ENGINE
+       12. AUTOMATIC INSTANT AI AUDIO GREETING ENGINE (OPEN & REFRESH)
        ---------------------------------------------------------------------- */
     const welcomeAudio = document.getElementById('welcome-audio');
     const aiAudioBanner = document.getElementById('ai-audio-banner');
     const aiAudioBannerText = document.getElementById('ai-audio-banner-text');
-    const floatingVoiceBtn = document.getElementById('floating-voice-btn');
     let hasPlayedAudio = false;
 
     function showAudioBanner(msg, duration = 6500) {
@@ -484,8 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function playAIGreeting(userInitiated = false) {
-        if (hasPlayedAudio && !userInitiated) return;
+    function playAIGreeting() {
+        if (hasPlayedAudio) return;
 
         if (welcomeAudio) {
             welcomeAudio.currentTime = 0;
@@ -497,12 +496,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     hasPlayedAudio = true;
                     showAudioBanner('🔊 AI Voice Greeting Playing...');
                 }).catch(err => {
-                    console.warn('Autoplay policy deferred audio, listening for user interaction:', err);
-                    if (userInitiated) {
-                        playSpeechFallback();
-                    } else {
-                        showAudioBanner('🔊 Tap Anywhere / Click AI Voice to Play', 0);
-                    }
+                    console.warn('Autoplay policy deferred audio, attempting SpeechSynthesis & interaction triggers:', err);
+                    playSpeechFallback();
                 });
             }
         } else {
@@ -511,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSpeechFallback() {
-        if (!('speechSynthesis' in window)) return;
+        if (hasPlayedAudio || !('speechSynthesis' in window)) return;
         try {
             window.speechSynthesis.cancel();
             const text = "Hey there! Welcome to my world. A mind full of ideas, a screen full of possibilities, and a passion for making them real.";
@@ -521,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
             utterance.volume = 1.0;
 
             const speakText = () => {
+                if (hasPlayedAudio) return;
                 const voices = window.speechSynthesis.getVoices();
                 const aiVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
                 if (aiVoice) utterance.voice = aiVoice;
@@ -542,27 +538,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Direct User Click Triggers for 100% Guaranteed Audio Playback on Netlify
-    if (floatingVoiceBtn) {
-        floatingVoiceBtn.addEventListener('click', () => {
-            hasPlayedAudio = false;
-            playAIGreeting(true);
-        });
-    }
-
     if (aiAudioBanner) {
         aiAudioBanner.addEventListener('click', () => {
             hasPlayedAudio = false;
-            playAIGreeting(true);
+            playAIGreeting();
         });
     }
 
-    // Global Viewport Interaction Triggers for HTTPS Production Domains
-    const unlockEvents = ['touchstart', 'click', 'pointerdown', 'scroll', 'keydown'];
+    // Global Viewport Interaction Triggers for Unlocking Production Audio
+    const unlockEvents = ['touchstart', 'click', 'pointerdown', 'scroll', 'mousemove', 'keydown'];
 
     function handleGlobalUnlock() {
         if (!hasPlayedAudio) {
-            playAIGreeting(false);
+            playAIGreeting();
         }
         if (hasPlayedAudio) {
             unlockEvents.forEach(evt => window.removeEventListener(evt, handleGlobalUnlock));
@@ -573,10 +561,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener(evt, handleGlobalUnlock, { passive: true });
     });
 
-    // Initial triggers on page load
-    playAIGreeting(false);
-    window.addEventListener('load', () => playAIGreeting(false));
-    document.addEventListener('DOMContentLoaded', () => playAIGreeting(false));
+    // Immediate automatic triggers on page open & refresh
+    playAIGreeting();
+    window.addEventListener('load', playAIGreeting);
+    window.addEventListener('pageshow', playAIGreeting);
+    document.addEventListener('DOMContentLoaded', playAIGreeting);
 
     // HTML5 Video Autoplay Helper
     function initWebVideos() {
