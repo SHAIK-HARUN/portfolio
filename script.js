@@ -457,13 +457,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ----------------------------------------------------------------------
-       12. 100% GUARANTEED LOCALHOST & BROWSER AI AUDIO PLAYBACK ENGINE
+       12. BULLETPROOF NETLIFY & CROSS-BROWSER AI AUDIO GREETING ENGINE
        ---------------------------------------------------------------------- */
     const welcomeAudio = document.getElementById('welcome-audio');
     const aiAudioBanner = document.getElementById('ai-audio-banner');
     const aiAudioBannerText = document.getElementById('ai-audio-banner-text');
+    const floatingVoiceBtn = document.getElementById('floating-voice-btn');
     let hasPlayedAudio = false;
-    let audioContext = null;
 
     function showAudioBanner(msg, duration = 6500) {
         if (!aiAudioBanner) return;
@@ -477,8 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function forcePlayOnLocalhost() {
-        if (hasPlayedAudio) return;
+    function playAIGreeting(userInitiated = false) {
+        if (hasPlayedAudio && !userInitiated) return;
 
         if (welcomeAudio) {
             welcomeAudio.currentTime = 0;
@@ -489,112 +489,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 promise.then(() => {
                     hasPlayedAudio = true;
                     showAudioBanner('🔊 AI Voice Greeting Playing...');
-                    console.log('✅ HTML5 Audio welcome.wav playing on localhost.');
                 }).catch(err => {
-                    console.warn('⚠️ Chrome Autoplay policy held cold start. Unlocking via Web Audio API & ambient viewport movement:', err);
-                    unlockWebAudioContext();
+                    console.warn('Autoplay policy deferred audio, listening for user interaction:', err);
+                    if (userInitiated) {
+                        playSpeechFallback();
+                    } else {
+                        showAudioBanner('🔊 Tap Anywhere / Click AI Voice to Play', 0);
+                    }
                 });
             }
         } else {
-            unlockWebAudioContext();
-        }
-    }
-
-    function unlockWebAudioContext() {
-        if (hasPlayedAudio) return;
-        try {
-            const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtxClass) {
-                if (!audioContext) audioContext = new AudioCtxClass();
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-
-                fetch('assets/audio/welcome.mp3')
-                    .then(res => res.arrayBuffer())
-                    .then(buffer => audioContext.decodeAudioData(buffer))
-                    .then(audioBuffer => {
-                        if (hasPlayedAudio) return;
-                        const source = audioContext.createBufferSource();
-                        const gainNode = audioContext.createGain();
-                        gainNode.gain.value = 2.0;
-                        source.buffer = audioBuffer;
-                        source.connect(gainNode);
-                        gainNode.connect(audioContext.destination);
-                        source.start(0);
-                        hasPlayedAudio = true;
-                        showAudioBanner('🔊 AI Voice Greeting Playing...');
-                        console.log('✅ Web Audio API welcome.mp3 playing successfully.');
-                    })
-                    .catch(err => {
-                        console.warn('Web Audio buffer error, attempting welcome.wav:', err);
-                        fetch('assets/audio/welcome.wav')
-                            .then(res => res.arrayBuffer())
-                            .then(buffer => audioContext.decodeAudioData(buffer))
-                            .then(audioBuffer => {
-                                if (hasPlayedAudio) return;
-                                const source = audioContext.createBufferSource();
-                                const gainNode = audioContext.createGain();
-                                gainNode.gain.value = 2.0;
-                                source.buffer = audioBuffer;
-                                source.connect(gainNode);
-                                gainNode.connect(audioContext.destination);
-                                source.start(0);
-                                hasPlayedAudio = true;
-                                showAudioBanner('🔊 AI Voice Greeting Playing...');
-                            })
-                            .catch(e => playSpeechFallback());
-                    });
-            } else {
-                playSpeechFallback();
-            }
-        } catch (e) {
             playSpeechFallback();
         }
     }
 
     function playSpeechFallback() {
-        if (hasPlayedAudio || !('speechSynthesis' in window)) return;
+        if (!('speechSynthesis' in window)) return;
         try {
             window.speechSynthesis.cancel();
-            const text = "Hey there. Welcome to my world, A mind full of ideas, a screen full of possibilities, and a passion for making them real.";
+            const text = "Hey there! Welcome to my world. A mind full of ideas, a screen full of possibilities, and a passion for making them real.";
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 0.95;
-            utterance.pitch = 1.05;
+            utterance.pitch = 1.0;
             utterance.volume = 1.0;
-            
-            utterance.onstart = () => {
-                hasPlayedAudio = true;
-                showAudioBanner('🔊 AI Voice Greeting Playing...');
+
+            const speakText = () => {
+                const voices = window.speechSynthesis.getVoices();
+                const aiVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+                if (aiVoice) utterance.voice = aiVoice;
+
+                utterance.onstart = () => {
+                    hasPlayedAudio = true;
+                    showAudioBanner('🔊 AI Voice Greeting Playing...');
+                };
+                window.speechSynthesis.speak(utterance);
             };
 
-            const voices = window.speechSynthesis.getVoices();
-            const aiVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Microsoft')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
-            if (aiVoice) utterance.voice = aiVoice;
-
-            window.speechSynthesis.speak(utterance);
+            if (window.speechSynthesis.getVoices().length > 0) {
+                speakText();
+            } else {
+                window.speechSynthesis.onvoiceschanged = speakText;
+            }
         } catch (e) {
             console.warn('SpeechSynthesis error:', e);
         }
     }
 
-    // Immediate load triggers
-    forcePlayOnLocalhost();
-    window.addEventListener('load', forcePlayOnLocalhost);
-    window.addEventListener('pageshow', forcePlayOnLocalhost);
-    document.addEventListener('DOMContentLoaded', forcePlayOnLocalhost);
+    // Direct User Click Triggers for 100% Guaranteed Audio Playback on Netlify
+    if (floatingVoiceBtn) {
+        floatingVoiceBtn.addEventListener('click', () => {
+            hasPlayedAudio = false;
+            playAIGreeting(true);
+        });
+    }
 
-    // Global viewport event triggers for Chrome Autoplay unlock
-    const unlockEvents = ['mousemove', 'pointermove', 'scroll', 'touchstart', 'click', 'keydown', 'focus', 'mouseover', 'mouseenter', 'wheel'];
+    if (aiAudioBanner) {
+        aiAudioBanner.addEventListener('click', () => {
+            hasPlayedAudio = false;
+            playAIGreeting(true);
+        });
+    }
+
+    // Global Viewport Interaction Triggers for HTTPS Production Domains
+    const unlockEvents = ['touchstart', 'click', 'pointerdown', 'scroll', 'keydown'];
 
     function handleGlobalUnlock() {
         if (!hasPlayedAudio) {
-            forcePlayOnLocalhost();
+            playAIGreeting(false);
         }
         if (hasPlayedAudio) {
-            if (aiAudioBanner) {
-                showAudioBanner('🔊 AI Voice Greeting Playing...', 6500);
-            }
             unlockEvents.forEach(evt => window.removeEventListener(evt, handleGlobalUnlock));
         }
     }
@@ -602,6 +565,11 @@ document.addEventListener('DOMContentLoaded', () => {
     unlockEvents.forEach(evt => {
         window.addEventListener(evt, handleGlobalUnlock, { passive: true });
     });
+
+    // Initial triggers on page load
+    playAIGreeting(false);
+    window.addEventListener('load', () => playAIGreeting(false));
+    document.addEventListener('DOMContentLoaded', () => playAIGreeting(false));
 
     // HTML5 Video Autoplay Helper
     function initWebVideos() {
